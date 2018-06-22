@@ -52,6 +52,8 @@ if __name__ == '__main__':
     jsonfile = config.get('global', 'jsonfile')
     defaultMinsBefore = config.get('defaults', 'minutesbefore')
     defaultMinsAfter = config.get('defaults', 'minutesafter')
+    defaultRoutes = [unicode(r.strip()) for r in config.get('defaults', 'routes').split(',')] \
+        if config.has_option('defaults', 'routes') else None
     config.remove_section('global')
     config.remove_section('defaults')
     results = []
@@ -62,7 +64,7 @@ if __name__ == '__main__':
         minsAfter = config.get(section, 'minutesafter') \
             if config.has_option(section, 'minutesafter') else defaultMinsAfter
         routes = [unicode(r.strip()) for r in config.get(section, 'routes').split(',')] \
-            if config.has_option(section, 'routes') else None
+            if config.has_option(section, 'routes') else defaultRoutes
         stopId = section
         results = get_departures_for_stop(results, stopId, routes, minsBefore, minsAfter, server, apikey)
 
