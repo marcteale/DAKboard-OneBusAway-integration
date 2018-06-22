@@ -49,6 +49,7 @@ if __name__ == '__main__':
 
     apikey = config.get('global', 'apikey')
     server = config.get('global', 'server')
+    jsonfile = config.get('global', 'jsonfile')
     defaultMinsBefore = config.get('defaults', 'minutesbefore')
     defaultMinsAfter = config.get('defaults', 'minutesafter')
     config.remove_section('global')
@@ -65,4 +66,5 @@ if __name__ == '__main__':
         stopId = section
         results = get_departures_for_stop(results, stopId, routes, minsBefore, minsAfter, server, apikey)
 
-    print(json.dumps(results))
+    with open(jsonfile, 'w') as outfile:
+        json.dump(results, outfile)
