@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import ConfigParser
 import json
+import os
 from datetime import datetime
 
 import requests
@@ -45,7 +46,7 @@ def get_departures_for_stop(departures, stop_id, routes, minutes_before, minutes
 
 if __name__ == '__main__':
     config = ConfigParser.ConfigParser(allow_no_value=True)
-    config.read('busstop.conf')
+    config.read(os.path.dirname(__file__) + '/busstop.conf')
 
     apikey = config.get('global', 'apikey')
     server = config.get('global', 'server')
