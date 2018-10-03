@@ -6,11 +6,14 @@ The script requires that you have a OneBusAway API key, which you can request by
 
 # Usage
 
-`$ ./busstop.py`
+`$ heroku local`
 
 # Configuration
+Your API key should be specified as an environment variable:
 
-All configuration is pulled from busstop.conf.  You can get stop IDs by 
+    heroku config:set APIKEY=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+
+The remaining config is pulled from busstop.conf.  You can get stop IDs by
 searching for your stop on https://onebusaway.org/.  Find your stop on the map,
 select it, and click on "Complete timetable."  The ID will be the end of the
 resulting URL.
@@ -19,15 +22,13 @@ e.g. URL=http://pugetsound.onebusaway.org/where/standard/schedule.action?id=1_57
 
 ID=1_575
 
+
 ## Sample configuration:
 
     # Required sections
-    [global]
-    apikey = XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-    server = http://api.pugetsound.onebusaway.org/
-    jsonfile = youroutputfile.json
-
     [defaults]
+    server = http://api.pugetsound.onebusaway.org/
+
     # Vehicles that have departed in the previous n minutes
     minutesbefore = 0
     # Vehicles departing in the next n minutes

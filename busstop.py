@@ -1,7 +1,8 @@
-#!/usr/bin/env python
-import ConfigParser
+#!/usr/bin/env python3.6
+import configparser
 import json
 import os
+import sys
 from datetime import datetime
 
 import requests
@@ -25,7 +26,10 @@ def get_departures_for_stop(departures, stop_id, routes, minutes_before, minutes
         if rj['data']['entry']['arrivalsAndDepartures']:
             for a in rj['data']['entry']['arrivalsAndDepartures']:
                 if a['departureEnabled'] and (routes is None or a['routeShortName'] in routes):
-                    departure_string = 'predictedDepartureTime' if a['predicted'] else 'scheduledDepartureTime'
+                    if a['predicted'] and a['predictedDepartureTime'] != 0:
+                        departure_string = 'predictedDepartureTime'
+                    else:
+                        departure_string = 'scheduledDepartureTime'
                     departure_time = datetime.fromtimestamp(a[departure_string] / 1000)
                     delta = int((departure_time - current_time).seconds / 60)
                     value = "{} - {} minute{}".format(a['routeShortName'], delta, '' if abs(delta) == 1 else 's')
@@ -44,30 +48,48 @@ def get_departures_for_stop(departures, stop_id, routes, minutes_before, minutes
     return departures
 
 
-if __name__ == '__main__':
-    config = ConfigParser.ConfigParser(allow_no_value=True)
-    config.read(os.path.dirname(__file__) + '/busstop.conf')
+def get_config():
+    """Read the config file."""
+    config = configparser.ConfigParser(allow_no_value=True)
+    configfile = os.path.abspath(os.path.dirname(__file__)) + '/busstop.conf'
+    config.read(configfile)
 
-    apikey = config.get('global', 'apikey')
-    server = config.get('global', 'server')
-    jsonfile = config.get('global', 'jsonfile')
-    defaultMinsBefore = config.get('defaults', 'minutesbefore')
-    defaultMinsAfter = config.get('defaults', 'minutesafter')
-    defaultRoutes = [unicode(r.strip()) for r in config.get('defaults', 'routes').split(',')] \
+    routes = [unicode(r.strip()) for r in config.get('defaults', 'routes').split(',')] \
         if config.has_option('defaults', 'routes') else None
-    config.remove_section('global')
+    defaults = {'minutesbefore': config.get('defaults', 'minutesbefore'),
+                'minutesafter': config.get('defaults', 'minutesafter'),
+                'routes': routes,
+                'apikey': os.environ['APIKEY'],
+                'server': config.get('defaults', 'server')}
     config.remove_section('defaults')
+    config.remove_section('defaults')
+    return config, defaults
+
+
+def app(environ, start_response):
+    try:
+        config, defaults = get_config()
+    except configparser.NoSectionError as e:
+        print(json.dumps({'title': 'Invalid or missing configuration file', 'value': e.message, 'subtitle': ''}))
+        sys.exit(1)
+
     results = []
 
     for section in config.sections():
         minsBefore = config.get(section, 'minutesbefore') \
-            if config.has_option(section, 'minutesbefore') else defaultMinsBefore
+            if config.has_option(section, 'minutesbefore') else defaults['minutesbefore']
         minsAfter = config.get(section, 'minutesafter') \
-            if config.has_option(section, 'minutesafter') else defaultMinsAfter
+            if config.has_option(section, 'minutesafter') else defaults['minutesafter']
         routes = [unicode(r.strip()) for r in config.get(section, 'routes').split(',')] \
-            if config.has_option(section, 'routes') else defaultRoutes
+            if config.has_option(section, 'routes') else defaults['routes']
         stopId = section
-        results = get_departures_for_stop(results, stopId, routes, minsBefore, minsAfter, server, apikey)
+        results = get_departures_for_stop(results, stopId, routes, minsBefore, minsAfter, defaults['server'],
+                                          defaults['apikey'])
 
-    with open(jsonfile, 'w') as outfile:
-        json.dump(results, outfile)
+    data = str.encode(json.dumps(results))
+    status = "200 OK"
+    response_headers = [
+        ("Content-Type:", "application/json"),
+        ("Content-Length", str(len(data)))
+    ]
+    return iter([data])
