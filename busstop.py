@@ -33,9 +33,7 @@ def get_departures_for_stop(departures, stop_id, routes, minutes_before, minutes
                     departure_time = datetime.fromtimestamp(a[departure_string] / 1000)
                     delta = int((departure_time - current_time).seconds / 60)
                     value = "{} - {} minute{}".format(a['routeShortName'], delta, '' if abs(delta) == 1 else 's')
-                    subtitle = '{} at {}'.format(
-                            departure_string.replace('DepartureTime', ''),
-                            departure_time.strftime("%-I:%M %P"))
+                    subtitle = '{}'.format(departure_string.replace('DepartureTime', ''))
                     departures.append({'value': value, 'title': stop_name, 'subtitle': subtitle})
 
         else:
