@@ -67,29 +67,32 @@ def get_config():
 
 
 def app(environ, start_response):
+    status = "200 OK"
     try:
         config, defaults = get_config()
-    except configparser.NoSectionError as e:
-        print(json.dumps({'title': 'Invalid or missing configuration file', 'value': e.message, 'subtitle': ''}))
-        sys.exit(1)
+        results = []
+        ok = True
+    except Exception as e:
+        status = "500 Internal Server Error"
+        results = json.dumps({'title': 'Error', 'value': e.message, 'subtitle': ''})
+        ok = False
 
-    results = []
-
-    for section in config.sections():
-        minsBefore = config.get(section, 'minutesbefore') \
-            if config.has_option(section, 'minutesbefore') else defaults['minutesbefore']
-        minsAfter = config.get(section, 'minutesafter') \
-            if config.has_option(section, 'minutesafter') else defaults['minutesafter']
-        routes = [unicode(r.strip()) for r in config.get(section, 'routes').split(',')] \
-            if config.has_option(section, 'routes') else defaults['routes']
-        stopId = section
-        results = get_departures_for_stop(results, stopId, routes, minsBefore, minsAfter, defaults['server'],
-                                          defaults['apikey'])
+    if ok:
+        for section in config.sections():
+            minsBefore = config.get(section, 'minutesbefore') \
+                if config.has_option(section, 'minutesbefore') else defaults['minutesbefore']
+            minsAfter = config.get(section, 'minutesafter') \
+                if config.has_option(section, 'minutesafter') else defaults['minutesafter']
+            routes = [unicode(r.strip()) for r in config.get(section, 'routes').split(',')] \
+                if config.has_option(section, 'routes') else defaults['routes']
+            stopId = section
+            results = get_departures_for_stop(results, stopId, routes, minsBefore, minsAfter, defaults['server'],
+                                              defaults['apikey'])
 
     data = str.encode(json.dumps(results))
-    status = "200 OK"
     response_headers = [
-        ("Content-Type:", "application/json"),
+        ("Content-Type", "application/json"),
         ("Content-Length", str(len(data)))
     ]
+    start_response(status, response_headers)
     return iter([data])
